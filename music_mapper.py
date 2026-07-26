@@ -261,7 +261,7 @@ class GeekatplayDisplayTextBox:
     OUTPUT_NODE = True
 
     def display_text(self, text):
-        return {"ui": {"string": [text]}, "result": (text,)}
+        return {"ui": {"text": [text], "string": [text]}, "result": (text,)}
 
 
 class GeekatplayAudioToSpectrogram:
