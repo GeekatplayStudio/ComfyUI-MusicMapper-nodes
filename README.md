@@ -1,147 +1,179 @@
 # Geekatplay Studio: MusicMapper Nodes for ComfyUI
 ### Created by Vladimir Chopine
-
-Welcome to the **Geekatplay Studio MusicMapper** node suite for ComfyUI. This extension enables users to bridge the gap between sound and vision. It provides custom nodes to transform music and audio into visually rich Mel-spectrogram images (suitable for training AI models like Riffusion or Stable Audio) and reconstruct those images back into high-quality waveforms. Additionally, it features a DSP-powered audio analyser that extracts tempo, key, brightness, and energy, feeding those metrics into local Ollama models (or a smart local fallback rules engine) to generate highly descriptive, 1000-character art prompts.
-
----
-
-## 🎨 Key Features
-
-1. **Audio to Mel-Spectrogram Conversion**:
-   - Creates standard Mel-spectrogram images (grayscale or color-mapped) optimized for training AI models on music (e.g. 512x512 square format).
-   - Custom **Geekatplay Orange Blue** colormap for premium, vibrant visuals.
-   - Built-in duration matching (automatically crops or pads audio) so all generated spectrogram images are perfectly uniform in dimensions.
-   
-2. **Phase-Encoded RGB Spectrograms**:
-   - Encodes magnitude in the Red channel, and complex phase details ($\cos\theta, \sin\theta$) in the Green and Blue channels.
-   - Allows near-lossless reconstruction of original audio directly from the RGB image without losing phase information.
-
-3. **Spectrogram to Audio Reconstruction**:
-   - Converts spectrogram images back to raw audio waveforms.
-   - Automatically detects parameters using embedded JSON metadata.
-   - Employs Griffin-Lim phase reconstruction for standard Mel-spectrograms, or analytical inversion for Phase-Encoded RGB images.
-
-4. **DSP Music Analyser & Prompt Generator**:
-   - **Key/Scale Detector**: Uses a Krumhansl-Schmuckler chromagram correlation algorithm to identify the tonality (e.g. C Major, F# Minor).
-   - **Tempo Estimator**: Extracts the beats-per-minute (BPM) from the audio pulse.
-   - **Timbre & Energy Analysis**: Measures Spectral Centroid (brightness), Zero Crossing Rate (noise/percussiveness), and RMS Energy (dynamics).
-   - **Ollama Integration**: Connects to a local Ollama server (e.g., running `llama3`, `mistral`, `gemma`, etc.) to synthesize these features into a detailed 1000-character visual prompt.
-   - **Smart Fallback Engine**: If Ollama is offline, a rich, rule-based musicological template engine generates a beautiful visual prompt automatically, ensuring your workflow never breaks.
-
-5. **Utility Nodes**:
-   - **GAP Load Audio**: Loads WAV, MP3, FLAC, OGG, or M4A files into ComfyUI's standard `AUDIO` format.
-   - **GAP Save Audio**: Transposes and saves generated audio waveforms directly to WAV files in the ComfyUI output directory.
-   - **GAP Display Text Box**: Renders generated prompt descriptions directly inside the ComfyUI canvas.
+*The ultimate custom node suite for converting music and sound into AI-trainable Mel-spectrogram images, analyzing audio features, and generating detailed ~1000-character visual prompts via local Ollama LLMs.*
 
 ---
 
-## 🛠️ Installation
+## 🎵 Overview
 
-We provide installation scripts for both Windows PC and macOS/Linux.
+**Geekatplay Studio MusicMapper** connects the worlds of audio and visual AI generation in ComfyUI. 
 
-### Windows (PC)
-Double-click `install_deps.bat` located inside this custom node directory:
-`ComfyUI/custom_nodes/ComfyUI-Geekatplay-MusicMapper/install_deps.bat`
-It will automatically locate ComfyUI's python environment and install all dependencies.
-
-### macOS / Linux
-Open a terminal in this directory and execute:
-```bash
-chmod +x install_deps.sh
-./install_deps.sh
-```
-
-### Manual Installation
-If you prefer manual setup, run the following command in your ComfyUI python environment:
-```bash
-pip install -r requirements.txt
-```
+Whether you are training AI music generation models (like Riffusion or Stable Audio) or creating visual artwork inspired by music, this node suite provides:
+1. **Audio-to-Spectrogram Conversion**: Generates square 512x512 Mel-spectrogram images (grayscale or color-mapped with our signature **Geekatplay Orange Blue** theme) ready for model training.
+2. **Phase-Encoded RGB Spectrograms**: Encodes complex sound phase data into RGB channels for near-lossless audio reconstruction.
+3. **Spectrogram-to-Audio Reconstruction**: Converts spectrogram images back into playable WAV audio files using Griffin-Lim or analytical phase inversion.
+4. **DSP Music Analyser & Prompt Generator**: Extracts key/scale, tempo (BPM), spectral centroid (brightness), zero crossing rate (noisiness), and RMS energy (volume).
+5. **Local Ollama LLM Integration**: Feeds extracted audio metrics into local Ollama models (e.g. `llama3`, `mistral`, `phi3`) to generate rich ~1000-character visual prompts for image generation. Includes a local offline fallback engine if Ollama is not active.
 
 ---
 
-## 🚀 Node Reference
+## 📖 Complete Beginner's Installation Guide
 
-### 1. `GAP Load Audio`
-*Loads audio files into ComfyUI.*
-- **Inputs**:
-  - `audio_file`: List of supported audio files in your `ComfyUI/input` folder.
-- **Outputs**:
-  - `AUDIO`: ComfyUI waveform tensor.
-  - `STRING`: Absolute path to the file.
+If you have never installed custom nodes, Git, or Ollama before, follow this guide step-by-step.
 
-### 2. `GAP Save Audio`
-*Saves waveforms as WAV files.*
-- **Inputs**:
-  - `audio`: The reconstructed audio signal.
-  - `filename_prefix`: The prefix for the saved WAV file.
-- **Outputs**:
-  - `STRING`: Saved WAV path.
+### Step 1: Install Git (Required to download custom nodes)
 
-### 3. `GAP Audio To Spectrogram`
-*Transforms raw audio into visual spectrogram images.*
-- **Inputs**:
-  - `mode`: `Mel-Spectrogram (Standard Training)` or `Phase-Encoded RGB (STFT)`.
-  - `colormap`: `Geekatplay Orange Blue`, `Grayscale`, `Viridis`, `Plasma`, `Magma`, `Inferno`.
-  - `n_fft`: Fast Fourier Transform window size (default: 2048).
-  - `hop_length`: Step size between frames (default: 512).
-  - `n_mels`: Number of Mel frequency bands (default: 512).
-  - `duration`: Crop or pad audio length in seconds (default: 10.0).
-  - `sample_rate`: Target sample rate (default: 44100).
-  - `channel_mode`: `mixdown_mono`, `stereo_vertical`, `left_only`, `right_only`.
-- **Outputs**:
-  - `IMAGE`: The spectrogram image tensor `[1, H, W, 3]`.
-  - `STRING`: JSON metadata containing parameters for reconstruction.
+Git is a free tool used to download code repositories from GitHub.
 
-### 4. `GAP Spectrogram To Audio`
-*Reconstructs audio from a spectrogram image.*
-- **Inputs**:
-  - `image`: Spectrogram image.
-  - `reconstruct_mode`: `Auto` (reads from metadata), `Mel-Spectrogram Griffin-Lim`, or `Phase-Encoded RGB`.
-  - `griffin_lim_iter`: Number of Griffin-Lim phase reconstruction iterations.
-  - `metadata_json`: Optional JSON metadata (can link directly from the generator node).
-- **Outputs**:
-  - `AUDIO`: Reconstructed waveform.
-
-### 5. `GAP Music Analyser & Prompt`
-*Extracts audio features and generates detailed visual prompts.*
-- **Inputs**:
-  - `use_ollama`: Toggle local Ollama LLM integration.
-  - `ollama_url`: URL of your local Ollama instance (default: `http://localhost:11434`).
-  - `ollama_model`: Ollama model to use (e.g., `llama3`, `mistral`, `phi3`).
-  - `art_style`: The visual style theme (e.g., `Synthwave / Cyberpunk`, `Cosmic / Nebula`, `Surrealism`).
-  - `additional_context`: Additional user tags or directions.
-- **Outputs**:
-  - `STRING`: Detailed ~1000 character prompt.
-  - `STRING`: Raw extracted features JSON string.
-
----
-
-## 🦙 Ollama Configuration
-
-To use the advanced Ollama LLM prompt generation:
-1. Download and install [Ollama](https://ollama.com/).
-2. Run Ollama locally on your system.
-3. Download a model of your choice by running:
-   ```bash
-   ollama run llama3
+#### 🪟 On Windows (PC):
+1. Download **Git for Windows** from the official site: [https://git-scm.com/download/win](https://git-scm.com/download/win).
+2. Run the downloaded `.exe` installer. Click **Next** on all prompts to accept default settings and click **Install**.
+3. *Alternative via Command Prompt (winget)*: Open Command Prompt as Administrator and run:
+   ```cmd
+   winget install --id Git.Git -e --source winget
    ```
-4. In the `GAP Music Analyser & Prompt` node, check `use_ollama` as True, set the URL to `http://localhost:11434`, and set `ollama_model` to `llama3` (or the model you pulled).
-5. If Ollama is offline or the model is not found, the node will seamlessly fall back to our local DSP-driven rule engine to generate the prompt.
+
+#### 🍎 On macOS (Mac):
+1. Open the **Terminal** app (Press `Cmd + Space`, type `Terminal`, and press `Enter`).
+2. Run the following command to install the Apple Developer Command Line Tools (which includes Git):
+   ```bash
+   xcode-select --install
+   ```
+3. A popup window will appear. Click **Install** and accept the license terms.
+4. *Alternative via Homebrew*: If you use Homebrew, run:
+   ```bash
+   brew install git
+   ```
 
 ---
 
-## 🗺️ Included Workflows
+### Step 2: Install Ollama & Download AI Models (For Music Prompts)
 
-Workflows are located in the `workflows/` folder:
+Ollama runs open-source LLMs locally on your computer (no cloud subscription needed).
 
-### 1. Audio to Spectrogram & Music Prompt Generation (`audio_to_spectrogram_and_prompt.json`)
-Loads a music file, converts it into a standard **Geekatplay Orange Blue** training spectrogram, and analyzes the audio. It generates a detailed description using Ollama (or fallback) and displays it on screen. It then passes the generated prompt into a standard KSampler to generate an image representing the music.
+#### 🪟 On Windows (PC):
+1. Go to [https://ollama.com/download/windows](https://ollama.com/download/windows).
+2. Download and run `OllamaSetup.exe`.
+3. Once installed, open your **Command Prompt** or **PowerShell** and pull a recommended LLM model:
+   ```cmd
+   ollama pull llama3
+   ```
+   *(Optional additional models: `ollama pull mistral` or `ollama pull phi3`)*
+4. Verify Ollama is running by opening your browser and visiting `http://localhost:11434`. You should see the message: `"Ollama is running"`.
 
-### 2. Spectrogram Image to Audio Reconstruction (`spectrogram_to_audio.json`)
-Loads a saved spectrogram image (containing embedded or linked metadata), processes it through the Griffin-Lim or Phase-Reconstruction decoder, and exports the reconstructed sound back into a playable WAV file.
+#### 🍎 On macOS (Mac):
+1. Go to [https://ollama.com/download/mac](https://ollama.com/download/mac).
+2. Download the `.zip` file, unzip it, and drag the **Ollama** app into your `Applications` folder.
+3. Open **Ollama** from your Applications folder.
+4. Open **Terminal** and run:
+   ```bash
+   ollama pull llama3
+   ```
+5. Verify it is running by checking `http://localhost:11434` in Safari or Chrome.
+
+> [!NOTE]
+> **Is Ollama strictly required?** No! If Ollama is not installed or turned off, our `GAP Music Analyser` node automatically uses its built-in **DSP Rules Engine** to generate the ~1000-character prompt offline. You will never get an error!
 
 ---
 
-## 🏷️ Credits & Branding
-*Designed and branded for **Geekatplay Studio by Vladimir Chopine**.*
-*Learn more at [Geekatplay Studio](https://www.geekatplay.com).*
+### Step 3: Clone the MusicMapper Custom Nodes
+
+1. Open **Command Prompt** (Windows) or **Terminal** (Mac).
+2. Navigate to your ComfyUI `custom_nodes` folder:
+
+   - **On Windows**:
+     ```cmd
+     cd /d C:\path\to\your\ComfyUI\custom_nodes
+     ```
+     *(Replace `C:\path\to\your\ComfyUI` with your actual ComfyUI directory path)*
+
+   - **On macOS**:
+     ```bash
+     cd /path/to/your/ComfyUI/custom_nodes
+     ```
+
+3. Run the `git clone` command to download the repository:
+   ```bash
+   git clone https://github.com/GeekatplayStudio/ComfyUI-MusicMapper-nodes.git
+   ```
+
+---
+
+### Step 4: Install Python Dependencies
+
+Our nodes use specialized audio processing libraries (`librosa`, `soundfile`, `matplotlib`).
+
+#### 🪟 On Windows (PC):
+1. Open File Explorer and navigate to your `ComfyUI/custom_nodes/ComfyUI-Geekatplay-MusicMapper/` folder.
+2. Double-click the file named **`install_deps.bat`**.
+3. A command window will open, automatically detect your ComfyUI python environment, install `requirements.txt`, and display: `"Installation complete successfully!"`.
+
+#### 🍎 On macOS (Mac):
+1. Open **Terminal** and navigate into the node folder:
+   ```bash
+   cd /path/to/your/ComfyUI/custom_nodes/ComfyUI-Geekatplay-MusicMapper
+   ```
+2. Make the installer script executable and run it:
+   ```bash
+   chmod +x install_deps.sh
+   ./install_deps.sh
+   ```
+
+---
+
+### Step 5: Start ComfyUI & Load Workflows
+
+1. Start (or restart) your ComfyUI server.
+2. Inside ComfyUI, you will see a new node category: **`Geekatplay Studio`**.
+3. We provide two ready-to-use visual workflow JSON files in the `workflows/` directory:
+
+#### Workflow 1: Audio to Spectrogram & Music Prompt Generation
+- **File**: `workflows/audio_to_spectrogram_and_prompt.json`
+- **What it does**:
+  1. Loads your input audio file (WAV, MP3, FLAC).
+  2. Analyzes key, scale, tempo, brightness, and volume energy.
+  3. Queries local Ollama to generate a detailed ~1000-character art prompt and displays it in a text box.
+  4. Renders the audio as a square Mel-spectrogram image with the **Geekatplay Orange Blue** colormap for AI training.
+- **How to use**: Drag and drop `audio_to_spectrogram_and_prompt.json` directly onto the ComfyUI canvas.
+
+#### Workflow 2: Spectrogram Image to Audio Reconstruction
+- **File**: `workflows/spectrogram_to_audio.json`
+- **What it does**:
+  1. Loads a saved spectrogram PNG image.
+  2. Reads the embedded audio parameters from JSON metadata.
+  3. Uses Griffin-Lim (or Phase Inversion) to synthesize the original audio waveform.
+  4. Saves the reconstructed sound as a `.wav` file.
+- **How to use**: Drag and drop `spectrogram_to_audio.json` directly onto the ComfyUI canvas.
+
+---
+
+## 🧩 Custom Nodes Reference
+
+| Node Name | Category | Function |
+| :--- | :--- | :--- |
+| **`GAP Load Audio`** | `Geekatplay Studio/Audio` | Loads WAV, MP3, FLAC, OGG, or M4A files into standard ComfyUI `AUDIO` tensors. |
+| **`GAP Save Audio`** | `Geekatplay Studio/Audio` | Transposes waveform matrices and exports WAV audio files to `ComfyUI/output`. |
+| **`GAP Audio To Spectrogram`** | `Geekatplay Studio/Spectrogram` | Converts audio into Mel-spectrogram images (512x512) or Phase-Encoded RGB images. |
+| **`GAP Spectrogram To Audio`** | `Geekatplay Studio/Spectrogram` | Reconstructs audio from spectrogram images using Griffin-Lim or Phase Inversion. |
+| **`GAP Music Analyser & Prompt`** | `Geekatplay Studio/Audio` | Extracts musical metrics (Key, BPM, Centroid, RMS) and generates ~1000-char prompts via Ollama/Fallback. |
+| **`GAP Display Text Box`** | `Geekatplay Studio/Utility` | Displays generated prompt descriptions directly inside the ComfyUI UI canvas. |
+
+---
+
+## ❓ Troubleshooting & FAQ
+
+### 1. `"ModuleNotFoundError: No module named 'librosa'"`
+- **Fix**: Re-run `install_deps.bat` (on PC) or `install_deps.sh` (on Mac). Make sure you run it with the exact Python environment that ComfyUI uses (e.g. `python_embeded` if using ComfyUI Portable).
+
+### 2. `"Ollama connection timed out / Ollama model not found"`
+- **Fix**: Check that Ollama is running (`http://localhost:11434`). If using a custom model name, type it into the `ollama_model` field (e.g. `mistral`, `gemma2`). If Ollama is turned off, set `use_ollama` to `False` in the node to use the offline rules generator.
+
+### 3. `"Where are the reconstructed audio files saved?"`
+- **Fix**: Reconstructed WAV files are saved in your main `ComfyUI/output/` directory with the prefix `Geekatplay_Reconstructed`.
+
+---
+
+## 🏷️ License & Credits
+
+Designed and developed for **Geekatplay Studio by Vladimir Chopine**.  
+Visit [Geekatplay Studio](https://www.geekatplay.com) for tutorials, digital art resources, and 3D/AI workflows.
