@@ -251,6 +251,9 @@ class GeekatplayDisplayTextBox:
         return {
             "required": {
                 "text": ("STRING", {"forceInput": True}),
+            },
+            "optional": {
+                "display_text": ("STRING", {"multiline": True, "default": ""}),
             }
         }
 
@@ -260,7 +263,11 @@ class GeekatplayDisplayTextBox:
     CATEGORY = "Geekatplay Studio/Audio"
     OUTPUT_NODE = True
 
-    def display_text(self, text):
+    def display_text(self, text, display_text=""):
+        print("\n==========================================================")
+        print("[Geekatplay MusicMapper] Display Text Box Output:")
+        print(text)
+        print("==========================================================\n")
         return {"ui": {"text": [text], "string": [text]}, "result": (text,)}
 
 
