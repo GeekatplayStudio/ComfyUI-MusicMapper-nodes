@@ -277,12 +277,12 @@ class GeekatplayAudioToSpectrogram:
         return {
             "required": {
                 "audio": ("AUDIO",),
-                "mode": (["Mel-Spectrogram (Standard Training)", "Phase-Encoded RGB (STFT)"], {"default": "Mel-Spectrogram (Standard Training)"}),
+                "mode": (["Phase-Encoded RGB (STFT)", "Mel-Spectrogram (Standard Training)"], {"default": "Phase-Encoded RGB (STFT)"}),
                 "colormap": (["Geekatplay Orange Blue", "Grayscale", "Viridis", "Plasma", "Magma", "Inferno"], {"default": "Geekatplay Orange Blue"}),
                 "n_fft": ("INT", {"default": DEFAULT_N_FFT, "min": 256, "max": 8192, "step": 256}),
                 "hop_length": ("INT", {"default": DEFAULT_HOP_LENGTH, "min": 64, "max": 4096, "step": 64}),
                 "n_mels": ("INT", {"default": DEFAULT_N_MELS, "min": 64, "max": 1024, "step": 64}),
-                "duration": ("FLOAT", {"default": 10.0, "min": 0.0, "max": 300.0, "step": 0.5}),
+                "duration": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 6000.0, "step": 1.0}),
                 "sample_rate": ("INT", {"default": 44100, "min": 8000, "max": 192000, "step": 1000}),
                 "channel_mode": (["mixdown_mono", "stereo_vertical", "left_only", "right_only"], {"default": "mixdown_mono"}),
             }

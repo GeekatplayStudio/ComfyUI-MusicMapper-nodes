@@ -132,12 +132,12 @@
         "Node name for S&R": "GeekatplayAudioToSpectrogram"
       },
       "widgets_values": [
-        "Mel-Spectrogram (Standard Training)",
+        "Phase-Encoded RGB (STFT)",
         "Geekatplay Orange Blue",
         2048,
         512,
         512,
-        10.0,
+        0.0,
         44100,
         "mixdown_mono"
       ]
