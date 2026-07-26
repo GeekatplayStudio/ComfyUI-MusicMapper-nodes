@@ -67,13 +67,17 @@ def run_full_pipeline_test():
     # 2. Run GeekatplayMusicAnalyser (LAION-CLAP Deep Learning Engine)
     print("\n[STEP 2] Running GAP Music Analyser (LAION-CLAP Deep Learning Engine)...")
     analyser_node = GeekatplayMusicAnalyser()
-    prompt, features_json = analyser_node.analyze_music(
+    res = analyser_node.analyze_music(
         audio=audio_input,
         analysis_engine="LAION-CLAP Deep Learning (Auto-Download)",
         ollama_url="http://localhost:11434",
         ollama_model="llama3",
         additional_context="High-fidelity acoustic resonance test"
     )
+    if isinstance(res, dict):
+        prompt, features_json = res["result"]
+    else:
+        prompt, features_json = res
     
     print("\n----------------------------------------------------------")
     print("GENERATED MUSICOLOGICAL PROMPT OUTPUT:")

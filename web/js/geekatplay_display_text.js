@@ -4,7 +4,7 @@ import { app } from "../../../scripts/app.js";
 app.registerExtension({
     name: "Geekatplay.MusicMapper.DisplayTextBox",
     async beforeRegisterNodeDef(nodeType, nodeData, app) {
-        if (nodeData.name === "GeekatplayDisplayTextBox" || nodeData.name === "GeekatplayPromptViewer") {
+        if (nodeData.name === "GeekatplayDisplayTextBox" || nodeData.name === "GeekatplayMusicAnalyser") {
             const origOnExecuted = nodeType.prototype.onExecuted;
             nodeType.prototype.onExecuted = function (message) {
                 origOnExecuted?.apply(this, arguments);
@@ -19,9 +19,9 @@ app.registerExtension({
                     
                     if (textContent) {
                         // Find or add multiline text widget
-                        let widget = this.widgets?.find((w) => w.name === "display_text" || w.name === "text");
+                        let widget = this.widgets?.find((w) => w.name === "generated_prompt" || w.name === "display_text" || w.name === "text");
                         if (!widget) {
-                            widget = this.addWidget("text", "display_text", "", () => {}, { multiline: true });
+                            widget = this.addWidget("text", "generated_prompt", "", () => {}, { multiline: true });
                         }
                         
                         widget.value = textContent;
@@ -29,7 +29,7 @@ app.registerExtension({
                             widget.inputEl.value = textContent;
                         }
                         
-                        this.setSize([480, 260]);
+                        this.setSize([500, 320]);
                         app.graph.setDirtyCanvas(true, true);
                     }
                 }

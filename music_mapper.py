@@ -555,6 +555,7 @@ class GeekatplayMusicAnalyser:
     RETURN_NAMES = ("prompt", "extracted_features_json")
     FUNCTION = "analyze_music"
     CATEGORY = "Geekatplay Studio/Audio"
+    OUTPUT_NODE = True
 
     def analyze_music(self, audio, analysis_engine="LAION-CLAP Deep Learning (Auto-Download)", ollama_url="http://localhost:11434", ollama_model="llama3", additional_context=""):
         waveform = audio["waveform"][0].cpu().numpy()
@@ -785,4 +786,10 @@ class GeekatplayMusicAnalyser:
                 print(f"[Geekatplay MusicMapper] Ollama error: {e}. Using rule-based fallback.")
 
         features_json = json.dumps(features_meta, indent=2)
-        return (final_prompt, features_json)
+        return {
+            "ui": {
+                "text": [final_prompt],
+                "string": [final_prompt]
+            },
+            "result": (final_prompt, features_json)
+        }

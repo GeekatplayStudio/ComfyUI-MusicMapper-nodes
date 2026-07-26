@@ -111,13 +111,17 @@ def test_music_mapper():
     
     print("\nTesting MusicAnalyser (LAION-CLAP Deep Learning Mode)...")
     node_analyser = GeekatplayMusicAnalyser()
-    prompt, features_json = node_analyser.analyze_music(
+    res = node_analyser.analyze_music(
         audio=audio,
         analysis_engine="LAION-CLAP Deep Learning (Auto-Download)",
         ollama_url="http://localhost:11434",
         ollama_model="llama3",
         additional_context="Focus on acoustic resonance"
     )
+    if isinstance(res, dict):
+        prompt, features_json = res["result"]
+    else:
+        prompt, features_json = res
     
     print("\nGenerated Prompt Preview (~1000 characters):")
     print(prompt)
