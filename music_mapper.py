@@ -124,7 +124,10 @@ class GeekatplayLoadAudio:
         files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f)) and f.lower().endswith(('.wav', '.mp3', '.flac', '.ogg', '.m4a'))]
         return {
             "required": {
-                "audio_file": (sorted(files) if files else [""],),
+                "audio_file": (sorted(files) if files else [""], {"audio_upload": True}),
+            },
+            "optional": {
+                "custom_path": ("STRING", {"default": "", "multiline": False}),
             }
         }
 
@@ -133,13 +136,38 @@ class GeekatplayLoadAudio:
     FUNCTION = "load_audio"
     CATEGORY = "Geekatplay Studio/Audio"
 
-    def load_audio(self, audio_file):
-        audio_path = folder_paths.get_annotated_filepath(audio_file)
-        if not os.path.isfile(audio_path):
-            raise FileNotFoundError(f"Audio file not found: {audio_path}")
+    def load_audio(self, audio_file="", custom_path=""):
+        resolved_path = None
+        
+        # 1. Prioritize custom_path if provided and exists
+        if custom_path and custom_path.strip():
+            clean_path = custom_path.strip().strip('"').strip("'")
+            if os.path.isfile(clean_path):
+                resolved_path = clean_path
+            else:
+                annotated = folder_paths.get_annotated_filepath(clean_path)
+                if os.path.isfile(annotated):
+                    resolved_path = annotated
+
+        # 2. Fall back to audio_file (from ComfyUI upload/input folder)
+        if not resolved_path and audio_file and audio_file.strip():
+            annotated = folder_paths.get_annotated_filepath(audio_file)
+            if os.path.isfile(annotated):
+                resolved_path = annotated
+            else:
+                input_dir = folder_paths.get_input_directory()
+                joined = os.path.join(input_dir, audio_file.strip())
+                if os.path.isfile(joined):
+                    resolved_path = joined
+
+        if not resolved_path or not os.path.isfile(resolved_path):
+            raise FileNotFoundError(
+                f"Audio file not found. Custom path: '{custom_path}', Audio file input: '{audio_file}'. "
+                "Please upload an audio file or enter a valid file path."
+            )
 
         # Load with librosa to support various formats and get float waveform
-        y, sr = librosa.load(audio_path, sr=None, mono=False)
+        y, sr = librosa.load(resolved_path, sr=None, mono=False)
         
         # Format to ComfyUI AUDIO standard: {"waveform": torch.Tensor [1, channels, samples], "sample_rate": int}
         if y.ndim == 1:
@@ -153,7 +181,7 @@ class GeekatplayLoadAudio:
             "waveform": waveform.float(),
             "sample_rate": int(sr)
         }
-        return (audio, audio_path)
+        return (audio, resolved_path)
 
 
 class GeekatplaySaveAudio:
