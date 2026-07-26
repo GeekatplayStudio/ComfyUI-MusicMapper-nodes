@@ -700,14 +700,15 @@ class GeekatplayMusicAnalyser:
                 model = ClapModel.from_pretrained("laion/clap-htsat-fused")
                 
                 candidate_labels = [
-                    "acoustic piano performance",
-                    "distorted electric guitar riff",
-                    "heavy synthesizer bassline",
-                    "acoustic drum rhythm beat",
-                    "brass orchestral instruments",
-                    "ambient synthesizer soundscape pad",
-                    "classical orchestral strings",
-                    "electronic dance music beat"
+                    "80s synthpop darkwave electronic rock",
+                    "heavy distorted electric guitar riff rock",
+                    "acoustic piano ballad performance",
+                    "analog synthesizer bassline synthwave",
+                    "driving electronic drum rhythm beat",
+                    "symphonic cinematic orchestral strings",
+                    "ambient atmospheric pad soundscape",
+                    "funky bass groove pop music",
+                    "hard rock heavy metal guitar"
                 ]
                 
                 inputs = processor(audio=y_48k, text=candidate_labels, sampling_rate=48000, return_tensors="pt", padding=True)
@@ -752,16 +753,16 @@ class GeekatplayMusicAnalyser:
             print(f"[Geekatplay MusicMapper] Querying local Ollama model '{ollama_model}' at {ollama_url}...")
             system_instruction = (
                 "You are a professional music prompt engineer for Suno AI and Udio by Vladimir Chopine at Geekatplay Studio. "
-                "Your task is to write a concise, comma-separated list of musical style tags, tempo, key, instruments, and mood based on the provided DSP audio features. "
+                "Your task is to write a rich, highly detailed, comma-separated list of musical style tags, genres, instrumentation, tempo, key, mood, and production techniques based on the provided DSP audio features. "
                 "Do NOT include any intro text, conversational filler, or formatting headers. Output ONLY the raw comma-separated prompt tags."
             )
             prompt_input = (
-                f"Generate a comma-separated list of musical style tags for Suno / Udio based on these extracted DSP audio features:\n"
+                f"Generate a rich comma-separated prompt for Suno / Udio based on these extracted DSP audio features:\n"
                 f"- Tempo: {tempo:.1f} BPM\n"
-                f"- Key & Tonality: {detected_key} ({tonality_desc})\n"
-                f"- Primary Timbre / Instrument: {features_meta.get('clap_primary_classification', 'acoustic instrumental')}\n"
-                f"- Frequency Centroid: {mean_centroid:.1f} Hz ({brightness_desc})\n"
-                f"- Dynamic Energy (RMS): {mean_rms:.4f} ({dynamic_desc})\n"
+                f"- Key & Scale: {detected_key}\n"
+                f"- Primary Genre / Sound Signature: {features_meta.get('clap_primary_classification', 'electronic rock')}\n"
+                f"- Spectral Centroid Brightness: {mean_centroid:.1f} Hz ({brightness_desc})\n"
+                f"- Dynamic Energy Level (RMS): {mean_rms:.4f} ({dynamic_desc})\n"
                 f"- Additional Context: {additional_context if additional_context else 'None'}\n"
             )
             try:
@@ -770,7 +771,7 @@ class GeekatplayMusicAnalyser:
                     "model": ollama_model,
                     "prompt": f"{system_instruction}\n\nUser Request:\n{prompt_input}",
                     "stream": False,
-                    "options": {"temperature": 0.7, "num_predict": 150}
+                    "options": {"temperature": 0.7, "num_predict": 180}
                 }
                 response = requests.post(url, json=payload, timeout=6.0)
                 if response.status_code == 200:
@@ -787,37 +788,53 @@ class GeekatplayMusicAnalyser:
 
         if prompt_style == "Suno / Udio Style (Comma-Separated Tags)":
             suno_tags = []
-            if "clap_primary_classification" in features_meta:
-                suno_tags.append(features_meta["clap_primary_classification"])
-            elif mean_centroid > 2400:
-                suno_tags.append("bright synth leads")
-            elif mean_centroid < 1200:
-                suno_tags.append("sub-bass low frequency groove")
+            
+            # 1. Genre & Primary Acoustic Sound Signature
+            primary = features_meta.get("clap_primary_classification", "")
+            if primary:
+                suno_tags.append(primary)
             else:
-                suno_tags.append("acoustic instrumental")
+                if mean_centroid > 3000:
+                    suno_tags.append("80s synthpop, darkwave, electronic rock")
+                elif mean_centroid < 1200:
+                    suno_tags.append("deep bass synthwave, low-end groove")
+                else:
+                    suno_tags.append("melodic acoustic rock performance")
 
+            # 2. Key & Tempo
             suno_tags.append(f"{tempo:.1f} BPM")
             suno_tags.append(f"key of {detected_key}")
             
+            # 3. Harmonic & Emotional Tonality
             if is_minor:
-                suno_tags.append("introspective, dark minor chord progression")
+                suno_tags.append("introspective, emotional minor key, dark modal chord progression")
             else:
-                suno_tags.append("bright, uplifting major-key harmony")
+                suno_tags.append("bright, triumphant major-key progression, uplifting harmony")
 
-            if mean_centroid < 1200:
-                suno_tags.append("deep bass warm timbre")
-            elif mean_centroid < 2400:
-                suno_tags.append("balanced mid-range balance")
+            # 4. Timbral Profile & High-Frequency Details
+            if mean_centroid > 3000:
+                suno_tags.append("sparkling bright treble, crisp metallic overtones, sharp high-frequency presence")
+            elif mean_centroid < 1200:
+                suno_tags.append("deep sub-bass warm timbre, heavy fundamental bass energy")
             else:
-                suno_tags.append("sparkling bright treble, crisp overtones")
+                suno_tags.append("balanced organic mid-range balance, natural frequency distribution")
 
+            # 5. Rhythm & Transient Texture
+            if mean_zcr > 0.06:
+                suno_tags.append("driving percussive attack, sharp transients, articulate drum rhythm")
+            else:
+                suno_tags.append("smooth legato melodic lines, clean sinusoidal harmonics")
+
+            # 6. Dynamic Range & Wall-of-Sound Production
             if mean_rms > 0.08:
-                suno_tags.append("high-energy wall-of-sound, loud dynamic compression")
+                suno_tags.append("high-energy wall-of-sound compression, loud dynamic punch, full-scale mastering")
             elif mean_rms < 0.015:
-                suno_tags.append("whisper-soft intimate dynamics")
+                suno_tags.append("whisper-soft intimate dynamics, delicate low-amplitude texture")
             else:
-                suno_tags.append("steady dynamic rhythm")
+                suno_tags.append("steady dynamic headroom, balanced sound pressure level")
 
+            # 7. Production Aesthetics & Additional Context
+            suno_tags.append("stereo width, professional studio mix")
             if additional_context and additional_context.strip():
                 suno_tags.append(additional_context.strip())
 
