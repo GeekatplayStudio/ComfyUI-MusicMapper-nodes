@@ -27,20 +27,12 @@ except ImportError:
             return name
     sys.modules['folder_paths'] = MockFolderPaths()
 
-try:
-    from .music_mapper import (  # type: ignore # noqa: F401
-        estimate_key,
-        GeekatplayAudioToSpectrogram,
-        GeekatplaySpectrogramToAudio,
-        GeekatplayMusicAnalyser
-    )
-except (ImportError, ModuleNotFoundError):
-    from music_mapper import (  # type: ignore # noqa: F401
-        estimate_key,
-        GeekatplayAudioToSpectrogram,
-        GeekatplaySpectrogramToAudio,
-        GeekatplayMusicAnalyser
-    )
+from music_mapper import (
+    estimate_key,
+    GeekatplayAudioToSpectrogram,
+    GeekatplaySpectrogramToAudio,
+    GeekatplayMusicAnalyser
+)
 
 def test_music_mapper():
     print("==============================================")

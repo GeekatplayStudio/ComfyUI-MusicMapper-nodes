@@ -5,26 +5,15 @@ _DIR = os.path.dirname(os.path.abspath(__file__))
 if _DIR not in sys.path:
     sys.path.insert(0, _DIR)
 
-try:
-    from .music_mapper import (  # type: ignore # noqa: F401
-        GeekatplayLoadAudio,
-        GeekatplaySaveAudio,
-        GeekatplayPreviewAudio,
-        GeekatplayDisplayTextBox,
-        GeekatplayAudioToSpectrogram,
-        GeekatplaySpectrogramToAudio,
-        GeekatplayMusicAnalyser
-    )
-except (ImportError, ModuleNotFoundError):
-    from music_mapper import (  # type: ignore # noqa: F401
-        GeekatplayLoadAudio,
-        GeekatplaySaveAudio,
-        GeekatplayPreviewAudio,
-        GeekatplayDisplayTextBox,
-        GeekatplayAudioToSpectrogram,
-        GeekatplaySpectrogramToAudio,
-        GeekatplayMusicAnalyser
-    )
+from .music_mapper import (
+    GeekatplayLoadAudio,
+    GeekatplaySaveAudio,
+    GeekatplayPreviewAudio,
+    GeekatplayDisplayTextBox,
+    GeekatplayAudioToSpectrogram,
+    GeekatplaySpectrogramToAudio,
+    GeekatplayMusicAnalyser
+)
 
 NODE_CLASS_MAPPINGS = {
     "GeekatplayLoadAudio": GeekatplayLoadAudio,
