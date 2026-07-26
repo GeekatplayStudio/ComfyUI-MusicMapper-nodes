@@ -519,7 +519,8 @@ class GeekatplayMusicAnalyser:
                 "use_ollama": ("BOOLEAN", {"default": True}),
                 "ollama_url": ("STRING", {"default": "http://localhost:11434"}),
                 "ollama_model": ("STRING", {"default": "llama3"}),
-                "art_style": (["Abstract Expressionism", "Surrealism", "Synthwave / Cyberpunk", "Cosmic / Nebula", "Fluid Dynamics", "Orchestral Cinematic"], {"default": "Cosmic / Nebula"}),
+            },
+            "optional": {
                 "additional_context": ("STRING", {"default": "", "multiline": True}),
             }
         }
@@ -529,7 +530,7 @@ class GeekatplayMusicAnalyser:
     FUNCTION = "analyze_music"
     CATEGORY = "Geekatplay Studio/Audio"
 
-    def analyze_music(self, audio, use_ollama, ollama_url, ollama_model, art_style, additional_context):
+    def analyze_music(self, audio, use_ollama, ollama_url, ollama_model, additional_context=""):
         waveform = audio["waveform"][0].cpu().numpy() # shape [channels, samples]
         sr = audio["sample_rate"]
         
@@ -576,65 +577,65 @@ class GeekatplayMusicAnalyser:
         std_rms = float(np.std(rms))
         dynamic_range = std_rms / (mean_rms + EPSILON)
         
-        # Map values to descriptive terms for prompt construction
+        # Map values to descriptive acoustic terms
         # Tempo description
         if tempo < 75:
-            tempo_desc = "Slow, meditative, ambient, and lingering pace"
-            movement_desc = "sluggishly flowing currents, slow-motion shifts, wispy floating trails"
+            tempo_desc = "Slow, ambient, lingering tempo with extended sustained waveforms"
+            rhythm_pattern = "sluggishly evolving rhythmic cycles and long-form sound waves"
         elif tempo < 100:
-            tempo_desc = "Relaxed, chill, and steady pulse"
-            movement_desc = "gently rolling waves, smooth rhythmic swaying, steady steps"
+            tempo_desc = "Relaxed, moderate, steady pulse with laid-back rhythmic groove"
+            rhythm_pattern = "gently rolling beats, smooth cadences, and steady meters"
         elif tempo < 120:
-            tempo_desc = "Moderate tempo, active and walking groove"
-            movement_desc = "flowing lines, moderately moving geometric streams, rhythmic pulses"
+            tempo_desc = "Walking moderate tempo with active rhythmic pulse"
+            rhythm_pattern = "structured steady drive, clear bar measure pulses, and regular cadence"
         elif tempo < 140:
-            tempo_desc = "Upbeat, driving, and energetic dance tempo"
-            movement_desc = "vibrant rapid pulses, structured grid expansions, jumping particles"
+            tempo_desc = "Upbeat, driving, high-tempo energy with prominent metric pulses"
+            rhythm_pattern = "rapid metric subdivisions, driving syncopated accents, and energetic pulse"
         else:
-            tempo_desc = "Fast-paced, hyperactive, high-velocity rush"
-            movement_desc = "lightning-fast sparks, kinetic streaks of light, chaotic explosive energy"
+            tempo_desc = "Fast-paced, hyper-velocity rush with dense rhythmic density"
+            rhythm_pattern = "rapid transient spikes, kinetic rhythmic density, and high-frequency impulses"
 
         # Key Scale description (Major vs Minor)
         is_minor = "minor" in detected_key.lower()
         if is_minor:
-            mood_desc = "introspective, melancholic, serious, dramatic, and emotionally deep"
-            color_desc = "cool tones, deep indigos, charcoals, shadowed hues, and obsidian blacks"
+            tonality_desc = "introspective, emotionally somber, minor-key harmonic structure"
+            consonance_desc = "complex harmonic tension, dark modal undertones, and brooding chord progressions"
         else:
-            mood_desc = "uplifting, triumphant, bright, positive, joyous, and harmonious"
-            color_desc = "warm tones, radiant golds, brilliant ambers, sunlit yellow, and bright creams"
+            tonality_desc = "bright, uplifting, major-key harmonic structure"
+            consonance_desc = "resonant consonant harmonies, stable tonal centers, and triumphant chord voicings"
 
         # Brightness (Centroid) description
         if mean_centroid < 1200:
-            brightness_desc = "deep, warm, muddy, bass-heavy, dark, and sub-surface"
-            texture_desc = "velvety shadows, thick heavy smoke, solid obsidian surfaces"
+            brightness_desc = "deep, sub-bass heavy, warm timbral profile with low spectral centroid"
+            freq_balance = "heavy fundamental bass energy, muted upper harmonics, and dark warm timbre"
         elif mean_centroid < 2400:
-            brightness_desc = "balanced, mid-range, natural, organic, and resonant"
-            texture_desc = "tactile wood, earthy grains, woven organic fibers"
+            brightness_desc = "balanced mid-range timbral profile with natural spectral distribution"
+            freq_balance = "well-defined vocal and instrumental mid-range frequencies with organic acoustic balance"
         else:
-            brightness_desc = "extremely bright, sparkling, sharp, metallic, high-frequency, and clinical"
-            texture_desc = "fractured crystal glass, brilliant glass reflections, sharp neon edges"
+            brightness_desc = "sparkling, bright, treble-dominant timbral profile with high spectral centroid"
+            freq_balance = "crisp high-frequency overtones, sharp metallic sibilance, and brilliant presence"
 
         # Zero Crossing Rate (Noise/Percussiveness) description
         if mean_zcr < 0.04:
-            noise_desc = "purely melodic, clean tones, smooth harmonics, and liquid-like transitions"
-            form_desc = "perfect curves, continuous uninterrupted sweeps, fluid spheres"
+            timbre_desc = "purely tonal, smooth sinusoidal harmonics, and clean melodic contours"
+            percussion_desc = "minimal transient noise, dominated by legato melodic lines and pure acoustic tones"
         elif mean_zcr < 0.12:
-            noise_desc = "standard acoustic textures, blended vocals, and balanced percussion"
-            form_desc = "combination of rounded corners and gentle hatch lines"
+            timbre_desc = "balanced acoustic texture with mixed tonal and percussive transients"
+            percussion_desc = "defined drum hits, articulate articulation, and balanced harmonic noise"
         else:
-            noise_desc = "harsh, percussive, distorted, white noise, and intensely textured"
-            form_desc = "spiky crystalline matrices, static noise grain, jagged fractures"
+            timbre_desc = "highly percussive, noisy, distorted, or heavily transient acoustic profile"
+            percussion_desc = "sharp attack transients, dense noise bursts, complex percussive articulation, and static grain"
 
         # RMS Energy description
         if mean_rms < 0.015:
-            energy_desc = "whisper-soft, delicate, silent, and fragile"
-            contrast_desc = "subtle low-contrast textures, soft blending edges"
+            dynamic_desc = "whisper-soft, delicate dynamic profile with low overall loudness"
+            amplitude_envelope = "subtle low-amplitude fluctuations and quiet intimate dynamics"
         elif mean_rms < 0.08:
-            energy_desc = "moderate presence, structured and stable volume"
-            contrast_desc = "defined forms with readable depth and shadows"
+            dynamic_desc = "moderate presence with consistent controlled volume"
+            amplitude_envelope = "steady dynamic headroom, balanced sound pressure level, and readable contrast"
         else:
-            energy_desc = "explosively loud, powerful, massive, wall-of-sound, and high-energy"
-            contrast_desc = "extreme high-contrast lighting, sharp chiaroscuro, blinding highlights"
+            dynamic_desc = "intensely loud, high-energy, wall-of-sound dynamic compression"
+            amplitude_envelope = "maximum RMS energy density, peak sound pressure level, and explosive volume peaks"
 
         features_meta = {
             "estimated_tempo_bpm": round(tempo, 1),
@@ -645,47 +646,29 @@ class GeekatplayMusicAnalyser:
             "rms_energy_mean": round(mean_rms, 4),
             "rms_energy_std": round(std_rms, 4),
             "dynamic_range_ratio": round(dynamic_range, 4),
-            "mood_type": "Minor / Introspective" if is_minor else "Major / Uplifting",
-            "brightness_type": "Dark" if mean_centroid < 1200 else ("Bright" if mean_centroid > 2400 else "Balanced")
+            "tonality_type": "Minor / Introspective" if is_minor else "Major / Uplifting",
+            "brightness_profile": "Dark / Sub-bass" if mean_centroid < 1200 else ("Bright / Treble" if mean_centroid > 2400 else "Balanced / Mid-range")
         }
         features_json = json.dumps(features_meta, indent=2)
 
-        # Structure Prompt instructions
-        prompt_style_map = {
-            "Abstract Expressionism": "an abstract expressionist oil painting with wild brushstrokes, layered textures, and heavy impasto.",
-            "Surrealism": "a surrealist dreamscape landscape with floating objects, melting structures, and dream-like symbolism inspired by Dali.",
-            "Synthwave / Cyberpunk": "a cyberpunk digital artwork, glowing neon cyan and magenta lines, wireframe grids, and retro-futuristic city elements.",
-            "Cosmic / Nebula": "a breathtaking cosmic nebula space scene, swirling interstellar dust, distant galaxies, stardust, and gas clouds.",
-            "Fluid Dynamics": "a macro liquid fluid art photo, beautiful marbled acrylic swirls, organic fluid currents, and glossy polished surfaces.",
-            "Orchestral Cinematic": "a cinematic fantasy landscape, epic cinematic lighting, sweeping atmospheric fog, dramatic rock formations, and hyper-detailed digital art."
-        }
-        
-        style_template = prompt_style_map.get(art_style, "an abstract digital artwork.")
-
-        # 1. Fallback Prompt Generator
+        # Pure Musicological Analysis Prompt
         fallback_prompt = (
-            f"Geekatplay Studio Visual Soundscape. A masterpiece depicting music in visual form: {style_template} "
-            f"The sound's tempo is {tempo:.1f} BPM ({tempo_desc}), showing {movement_desc} moving across the frame. "
-            f"The musical scale is {detected_key}, setting an atmosphere that is {mood_desc}. "
-            f"Color palette consists of {color_desc}. "
-            f"The frequency profile is {brightness_desc}, characterized by {texture_desc}. "
-            f"Sonically, it is {noise_desc}, translating visually into {form_desc}. "
-            f"With a volume energy that is {energy_desc}, the scene displays {contrast_desc}. "
-            f"Visualized sound waves, spectrogram lines, and acoustic resonance patterns are woven into the composition. "
-            f"Detailed, high-resolution, premium art, 8k, Vladimir Chopine, Geekatplay Studio style."
+            f"Geekatplay Studio Audio Analysis Report by Vladimir Chopine. "
+            f"Detailed Acoustic & Musicological Profile: The composition is set to an estimated tempo of {tempo:.1f} BPM ({tempo_desc}), characterized by {rhythm_pattern}. "
+            f"Harmonically, the track is in the key of {detected_key} ({tonality_desc}), exhibiting {consonance_desc}. "
+            f"The spectral centroid averages {mean_centroid:.1f} Hz ({brightness_desc}), resulting in {freq_balance}. "
+            f"Timbrally, the signal exhibits a zero crossing rate of {mean_zcr:.4f} ({timbre_desc}), featuring {percussion_desc}. "
+            f"With a mean RMS energy level of {mean_rms:.4f} ({dynamic_desc}), the audio displays an amplitude envelope with {amplitude_envelope}. "
+            f"Spectral rolloff cutoff is at {mean_rolloff:.1f} Hz with a dynamic range ratio of {dynamic_range:.4f}."
         )
         
         if additional_context and additional_context.strip():
-            fallback_prompt += f" Incorporating elements: {additional_context.strip()}."
+            fallback_prompt += f" Additional Context: {additional_context.strip()}."
 
-        # Truncate/Pad fallback prompt to be ~1000 characters if desired, but currently it is around 700-900.
-        # Let's expand fallback slightly to guarantee ~1000 characters.
         if len(fallback_prompt) < 950:
             expansion = (
-                f" Every brushstroke and color choice directly reflects the audio frequencies: "
-                f"the low-end bass notes anchor the bottom of the scene with weight, while high-frequency treble sparkles "
-                f"float like stardust at the top. The dynamic shifts are captured in the complexity of the shapes, "
-                f"creating a complete synesthetic visualization where you can feel the sound vibrating through the visual medium."
+                f" This detailed audio feature signature accurately describes the physical sound waves, tonal key center, "
+                f"frequency distribution, transient density, and dynamic loudness of the recording for model mapping and acoustic synthesis."
             )
             fallback_prompt += expansion
 
@@ -696,24 +679,22 @@ class GeekatplayMusicAnalyser:
             print(f"[Geekatplay MusicMapper] Querying local Ollama model '{ollama_model}' at {ollama_url}...")
             
             system_instruction = (
-                "You are an expert musicologist and prompt engineer for Geekatplay Studio by Vladimir Chopine. "
-                "Your task is to write a detailed, highly descriptive prompt (about 1000 characters) for an AI image generator (like Stable Diffusion) that visually represents a piece of music based on its extracted features. "
-                "Do not include any intro, outro, headers, explanation, or metadata in your response. Output ONLY the raw descriptive prompt."
+                "You are an expert musicologist and audio signal analyst for Geekatplay Studio by Vladimir Chopine. "
+                "Your task is to write an extensive, highly detailed, professional musicological description (around 1000 characters) analyzing the audio's musical characteristics, key, tempo, acoustic dynamics, timbre, frequency balance, and rhythm. "
+                "Do NOT include any visual art styles (no paintings, no cyberpunks, no surrealism). Focus 100% purely on the music and sound wave analysis. Output ONLY the raw description paragraph."
             )
             
             prompt_input = (
-                f"Create a detailed visual prompt based on these extracted audio features:\n"
+                f"Write a comprehensive music analysis paragraph (around 1000 characters) based on these extracted DSP audio features:\n"
                 f"- Tempo: {tempo:.1f} BPM ({tempo_desc})\n"
-                f"- Musical Key: {detected_key}\n"
-                f"- Mood/Atmosphere: {mood_desc}\n"
-                f"- Dominant Colors: {color_desc}\n"
-                f"- Brightness/Treble Centroid: {brightness_desc} (average frequency {mean_centroid:.1f} Hz)\n"
-                f"- Textures: {texture_desc}\n"
-                f"- Percussiveness/Zero Crossing: {noise_desc}\n"
-                f"- Energy/Volume: {energy_desc}\n"
-                f"- Art Style: {style_template}\n"
-                f"- User Additional Context: {additional_context if additional_context else 'None'}\n\n"
-                f"Write a single descriptive paragraph (around 1000 characters) containing rich, high-fidelity art terms, detailing shapes, colors, shadows, movement, and lighting that perfectly visualize this sound. Include Geekatplay Studio and Vladimir Chopine in the description."
+                f"- Rhythmic Pattern: {rhythm_pattern}\n"
+                f"- Key & Tonality: {detected_key} ({tonality_desc})\n"
+                f"- Harmonic Tension: {consonance_desc}\n"
+                f"- Frequency Centroid: {mean_centroid:.1f} Hz ({brightness_desc})\n"
+                f"- Timbre & Noise (Zero Crossing): {mean_zcr:.4f} ({timbre_desc})\n"
+                f"- Dynamic Energy (RMS): {mean_rms:.4f} ({dynamic_desc})\n"
+                f"- Additional Context: {additional_context if additional_context else 'None'}\n\n"
+                f"Write a continuous, highly detailed, academic yet accessible analysis of this music. Include Geekatplay Studio and Vladimir Chopine."
             )
             
             try:

@@ -125,8 +125,7 @@ def test_music_mapper():
         use_ollama=False,
         ollama_url="http://localhost:11434",
         ollama_model="llama3",
-        art_style="Cosmic / Nebula",
-        additional_context="Swirling gaseous pillars of light"
+        additional_context="Focus on acoustic resonance"
     )
     
     print("\nGenerated Prompt Preview (~1000 characters):")
