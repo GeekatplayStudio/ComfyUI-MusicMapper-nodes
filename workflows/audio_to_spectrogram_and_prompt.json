@@ -4,30 +4,24 @@
   "nodes": [
     {
       "id": 1,
-      "type": "GeekatplayLoadAudio",
+      "type": "LoadAudio",
       "pos": [100, 100],
-      "size": [350, 80],
+      "size": [360, 120],
       "flags": {},
       "order": 0,
       "mode": 0,
       "inputs": [],
       "outputs": [
         {
-          "name": "audio",
+          "name": "AUDIO",
           "type": "AUDIO",
           "links": [1, 2],
           "slot_index": 0
-        },
-        {
-          "name": "audio_path",
-          "type": "STRING",
-          "links": [],
-          "slot_index": 1
         }
       ],
-      "title": "GAP Load Audio (Geekatplay)",
+      "title": "Load Audio (Native ComfyUI)",
       "properties": {
-        "Node name for S&R": "GeekatplayLoadAudio"
+        "Node name for S&R": "LoadAudio"
       },
       "widgets_values": [
         "input_audio.wav"
