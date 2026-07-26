@@ -504,10 +504,12 @@ class GeekatplaySpectrogramToAudio:
                 phase = np.arctan2(phase_sin, phase_cos)
                 
                 D = magnitude * np.exp(1j * phase)
+                n_fft_actual = 2 * (D.shape[0] - 1)
                 y_recon = librosa.istft(
                     D,
+                    n_fft=n_fft_actual,
                     hop_length=hop,
-                    win_length=fft_len
+                    win_length=n_fft_actual
                 )
 
             if original_samples > 0:
