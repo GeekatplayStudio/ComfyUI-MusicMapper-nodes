@@ -77,9 +77,9 @@
     },
     {
       "id": 3,
-      "type": "GeekatplaySaveAudio",
+      "type": "SaveAudio",
       "pos": [870, 100],
-      "size": [350, 100],
+      "size": [350, 140],
       "flags": {},
       "order": 2,
       "mode": 0,
@@ -90,20 +90,13 @@
           "link": 2
         }
       ],
-      "outputs": [
-        {
-          "name": "saved_path",
-          "type": "STRING",
-          "links": [],
-          "slot_index": 0
-        }
-      ],
-      "title": "GAP Save Audio (Geekatplay)",
+      "outputs": [],
+      "title": "Save & Preview Audio (Native ComfyUI)",
       "properties": {
-        "Node name for S&R": "GeekatplaySaveAudio"
+        "Node name for S&R": "SaveAudio"
       },
       "widgets_values": [
-        "Geekatplay_Reconstructed"
+        "audio/Geekatplay_Reconstructed"
       ]
     }
   ],
