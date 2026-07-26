@@ -3,8 +3,10 @@ import json
 import numpy as np
 import torch
 import librosa
+import soundfile as sf
 import requests
 import matplotlib.pyplot as plt
+import folder_paths
 
 # Setup default configurations
 DEFAULT_N_FFT = 2048
@@ -98,6 +100,167 @@ def invert_colormap_to_grayscale(rgb_img):
     return 0.299 * r + 0.587 * g + 0.114 * b
 
 
+class GeekatplayLoadAudio:
+    @classmethod
+    def INPUT_TYPES(cls):
+        input_dir = folder_paths.get_input_directory()
+        files = []
+        if os.path.exists(input_dir):
+            files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f)) and f.lower().endswith(('.wav', '.mp3', '.flac', '.ogg', '.m4a', '.aiff'))]
+        if not files:
+            files = ["example.wav"]
+        return {
+            "required": {
+                "audio_file": (sorted(files), {"audio_upload": True}),
+            },
+            "optional": {
+                "custom_path": ("STRING", {"default": "", "multiline": False}),
+            }
+        }
+
+    RETURN_TYPES = ("AUDIO", "STRING")
+    RETURN_NAMES = ("audio", "audio_path")
+    FUNCTION = "load_audio"
+    CATEGORY = "Geekatplay Studio/Audio"
+
+    def load_audio(self, audio_file, custom_path=""):
+        resolved_path = ""
+        if custom_path and custom_path.strip():
+            cp = custom_path.strip().strip('"').strip("'")
+            if os.path.isfile(cp):
+                resolved_path = cp
+            else:
+                input_dir = folder_paths.get_input_directory()
+                joined = os.path.join(input_dir, cp)
+                if os.path.isfile(joined):
+                    resolved_path = joined
+
+        if not resolved_path:
+            input_dir = folder_paths.get_input_directory()
+            annotated = folder_paths.get_annotated_filepath(audio_file)
+            if os.path.isfile(annotated):
+                resolved_path = annotated
+            else:
+                joined = os.path.join(input_dir, audio_file)
+                if os.path.isfile(joined):
+                    resolved_path = joined
+
+        if not resolved_path or not os.path.isfile(resolved_path):
+            raise FileNotFoundError(f"Audio file not found: '{audio_file}' / '{custom_path}'")
+
+        y, sr = librosa.load(resolved_path, sr=None, mono=False)
+        if y.ndim == 1:
+            waveform = torch.from_numpy(y).unsqueeze(0).unsqueeze(0)
+        else:
+            waveform = torch.from_numpy(y).unsqueeze(0)
+
+        audio = {
+            "waveform": waveform.float(),
+            "sample_rate": int(sr)
+        }
+        return (audio, resolved_path)
+
+
+class GeekatplaySaveAudio:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "audio": ("AUDIO",),
+                "filename_prefix": ("STRING", {"default": "Geekatplay_Audio"}),
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("saved_path",)
+    FUNCTION = "save_audio"
+    CATEGORY = "Geekatplay Studio/Audio"
+    OUTPUT_NODE = True
+
+    def save_audio(self, audio, filename_prefix):
+        waveform = audio["waveform"]
+        sample_rate = audio["sample_rate"]
+        
+        y_tensor = waveform[0].cpu()
+        y_np = y_tensor.numpy().T
+        
+        max_val = np.max(np.abs(y_np))
+        if max_val > 1.0:
+            y_np = y_np / max_val
+        elif max_val > 0.001 and max_val < 0.3:
+            y_np = (y_np / max_val) * 0.95
+            
+        y_np = np.nan_to_num(y_np, nan=0.0)
+        
+        output_dir = folder_paths.get_output_directory()
+        import uuid
+        filename = f"{filename_prefix}_{uuid.uuid4().hex[:8]}.wav"
+        save_path = os.path.join(output_dir, filename)
+        
+        sf.write(save_path, y_np, sample_rate)
+        results = [{"filename": filename, "subfolder": "", "type": "output"}]
+        return {"ui": {"audio": results}, "result": (save_path,)}
+
+
+class GeekatplayPreviewAudio:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "audio": ("AUDIO",),
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("temp_path",)
+    FUNCTION = "preview_audio"
+    CATEGORY = "Geekatplay Studio/Audio"
+    OUTPUT_NODE = True
+
+    def preview_audio(self, audio):
+        waveform = audio["waveform"]
+        sample_rate = audio["sample_rate"]
+        
+        y_tensor = waveform[0].cpu()
+        y_np = y_tensor.numpy().T
+        
+        max_val = np.max(np.abs(y_np))
+        if max_val > 1.0:
+            y_np = y_np / max_val
+        elif max_val > 0.001 and max_val < 0.3:
+            y_np = (y_np / max_val) * 0.95
+            
+        y_np = np.nan_to_num(y_np, nan=0.0)
+        
+        temp_dir = folder_paths.get_temp_directory()
+        import uuid
+        filename = f"GAP_Preview_{uuid.uuid4().hex[:8]}.wav"
+        save_path = os.path.join(temp_dir, filename)
+        
+        sf.write(save_path, y_np, sample_rate)
+        results = [{"filename": filename, "subfolder": "", "type": "temp"}]
+        return {"ui": {"audio": results}, "result": (save_path,)}
+
+
+class GeekatplayDisplayTextBox:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "text": ("STRING", {"forceInput": True}),
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("text",)
+    FUNCTION = "display_text"
+    CATEGORY = "Geekatplay Studio/Audio"
+    OUTPUT_NODE = True
+
+    def display_text(self, text):
+        return {"ui": {"string": [text]}, "result": (text,)}
+
+
 class GeekatplayAudioToSpectrogram:
     @classmethod
     def INPUT_TYPES(cls):
@@ -121,7 +284,7 @@ class GeekatplayAudioToSpectrogram:
     CATEGORY = "Geekatplay Studio/Spectrogram"
 
     def generate_spectrogram(self, audio, mode, colormap, n_fft, hop_length, n_mels, duration, sample_rate, channel_mode):
-        waveform = audio["waveform"][0].cpu().numpy() # shape [channels, samples]
+        waveform = audio["waveform"][0].cpu().numpy()
         orig_sr = audio["sample_rate"]
         
         if orig_sr != sample_rate:
@@ -133,7 +296,7 @@ class GeekatplayAudioToSpectrogram:
             y = waveform[0:1]
         elif channel_mode == "right_only":
             y = waveform[1:2] if waveform.shape[0] > 1 else waveform[0:1]
-        else: # stereo_vertical
+        else:
             y = waveform[0:2]
 
         num_channels = y.shape[0]
@@ -275,7 +438,7 @@ class GeekatplaySpectrogramToAudio:
         original_samples = meta.get("original_samples", 0)
         channel_metadata = meta.get("channel_metadata", [])
 
-        img_np = image[0].cpu().numpy() # [H, W, C]
+        img_np = image[0].cpu().numpy()
         panel_height = img_np.shape[0] // channels
         
         reconstructed_waveforms = []
@@ -333,7 +496,6 @@ class GeekatplaySpectrogramToAudio:
             
         waveform_np = np.stack(reconstructed_waveforms, axis=0)
         
-        # Peak normalize waveform to 0.95 peak amplitude so audio is clear
         max_val = np.max(np.abs(waveform_np))
         if max_val > 1e-6:
             waveform_np = (waveform_np / max_val) * 0.95
@@ -368,7 +530,7 @@ class GeekatplayMusicAnalyser:
     CATEGORY = "Geekatplay Studio/Audio"
 
     def analyze_music(self, audio, use_ollama, ollama_url, ollama_model, additional_context=""):
-        waveform = audio["waveform"][0].cpu().numpy() # shape [channels, samples]
+        waveform = audio["waveform"][0].cpu().numpy()
         sr = audio["sample_rate"]
         y = np.mean(waveform, axis=0)
         
