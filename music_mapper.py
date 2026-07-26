@@ -206,10 +206,16 @@ class GeekatplaySaveAudio:
         
         # Select first batch item
         y_tensor = waveform[0].cpu()
-        channels = y_tensor.shape[0]
+        y_np = y_tensor.numpy().T # soundfile expects (samples, channels)
         
-        # soundfile expects (samples, channels)
-        y_np = y_tensor.numpy().T
+        # Normalize quiet or clipped signals for clear playback
+        max_val = np.max(np.abs(y_np))
+        if max_val > 1.0:
+            y_np = y_np / max_val
+        elif max_val > 0.001 and max_val < 0.3:
+            y_np = (y_np / max_val) * 0.95
+            
+        y_np = np.nan_to_num(y_np, nan=0.0)
         
         output_dir = folder_paths.get_output_directory()
         
@@ -220,7 +226,63 @@ class GeekatplaySaveAudio:
         
         sf.write(save_path, y_np, sample_rate)
         print(f"[Geekatplay MusicMapper] Saved audio file to: {save_path}")
-        return (save_path,)
+        
+        # ComfyUI frontend web audio player event
+        results = [
+            {
+                "filename": filename,
+                "subfolder": "",
+                "type": "output"
+            }
+        ]
+        return {"ui": {"audio": results}, "result": (save_path,)}
+
+
+class GeekatplayPreviewAudio:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "audio": ("AUDIO",),
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("temp_path",)
+    FUNCTION = "preview_audio"
+    CATEGORY = "Geekatplay Studio/Audio"
+    OUTPUT_NODE = True
+
+    def preview_audio(self, audio):
+        waveform = audio["waveform"]
+        sample_rate = audio["sample_rate"]
+        
+        y_tensor = waveform[0].cpu()
+        y_np = y_tensor.numpy().T
+        
+        max_val = np.max(np.abs(y_np))
+        if max_val > 1.0:
+            y_np = y_np / max_val
+        elif max_val > 0.001 and max_val < 0.3:
+            y_np = (y_np / max_val) * 0.95
+            
+        y_np = np.nan_to_num(y_np, nan=0.0)
+        
+        temp_dir = folder_paths.get_temp_directory()
+        import uuid
+        filename = f"GAP_Preview_{uuid.uuid4().hex[:8]}.wav"
+        save_path = os.path.join(temp_dir, filename)
+        
+        sf.write(save_path, y_np, sample_rate)
+        
+        results = [
+            {
+                "filename": filename,
+                "subfolder": "",
+                "type": "temp"
+            }
+        ]
+        return {"ui": {"audio": results}, "result": (save_path,)}
 
 
 class GeekatplayAudioToSpectrogram:

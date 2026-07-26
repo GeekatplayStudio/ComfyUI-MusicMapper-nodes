@@ -8,6 +8,7 @@ try:
     from .music_mapper import (
         GeekatplayLoadAudio,
         GeekatplaySaveAudio,
+        GeekatplayPreviewAudio,
         GeekatplayAudioToSpectrogram,
         GeekatplaySpectrogramToAudio,
         GeekatplayMusicAnalyser,
@@ -17,6 +18,7 @@ except ImportError:
     from music_mapper import (
         GeekatplayLoadAudio,
         GeekatplaySaveAudio,
+        GeekatplayPreviewAudio,
         GeekatplayAudioToSpectrogram,
         GeekatplaySpectrogramToAudio,
         GeekatplayMusicAnalyser,
@@ -26,6 +28,7 @@ except ImportError:
 NODE_CLASS_MAPPINGS = {
     "GeekatplayLoadAudio": GeekatplayLoadAudio,
     "GeekatplaySaveAudio": GeekatplaySaveAudio,
+    "GeekatplayPreviewAudio": GeekatplayPreviewAudio,
     "GeekatplayAudioToSpectrogram": GeekatplayAudioToSpectrogram,
     "GeekatplaySpectrogramToAudio": GeekatplaySpectrogramToAudio,
     "GeekatplayMusicAnalyser": GeekatplayMusicAnalyser,
@@ -35,6 +38,7 @@ NODE_CLASS_MAPPINGS = {
 NODE_DISPLAY_NAME_MAPPINGS = {
     "GeekatplayLoadAudio": "GAP Load Audio (Geekatplay)",
     "GeekatplaySaveAudio": "GAP Save Audio (Geekatplay)",
+    "GeekatplayPreviewAudio": "GAP Preview Audio (Geekatplay)",
     "GeekatplayAudioToSpectrogram": "GAP Audio To Spectrogram (Geekatplay)",
     "GeekatplaySpectrogramToAudio": "GAP Spectrogram To Audio (Geekatplay)",
     "GeekatplayMusicAnalyser": "GAP Music Analyser & Prompt (Geekatplay)",
