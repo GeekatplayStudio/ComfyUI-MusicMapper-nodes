@@ -733,18 +733,27 @@ class GeekatplayMusicAnalyser:
                 response = requests.post(url, json=payload, timeout=6.0)
                 if response.status_code == 200:
                     resp_json = response.json()
-                    response_text = resp_json.get("response", "").strip()
-                    if len(response_text) > 150:
+                    response_text = resp_json.get("response", "")
+                    if not response_text and "message" in resp_json:
+                        response_text = resp_json["message"].get("content", "")
+                    response_text = response_text.strip()
+                    
+                    if len(response_text) > 100:
                         final_prompt = response_text
                         print("[Geekatplay MusicMapper] Ollama prompt generated successfully.")
                     else:
-                        print("[Geekatplay MusicMapper] Ollama response too short. Using rule-based fallback.")
+                        print(f"[Geekatplay MusicMapper] Ollama response too short ({len(response_text)} chars). Using rule-based fallback.")
                 else:
                     print(f"[Geekatplay MusicMapper] Ollama returned status {response.status_code}. Using rule-based fallback.")
             except requests.exceptions.Timeout:
                 print("[Geekatplay MusicMapper] Ollama connection timed out. Using rule-based fallback.")
             except Exception as e:
                 print(f"[Geekatplay MusicMapper] Ollama error: {e}. Using rule-based fallback.")
+
+        # Ultimate safety check: ensure final_prompt is never empty
+        if not final_prompt or len(final_prompt.strip()) < 50:
+            print("[Geekatplay MusicMapper] Prompt was empty. Using rule-based fallback engine.")
+            final_prompt = fallback_prompt
 
         return (final_prompt, features_json)
 
@@ -755,6 +764,9 @@ class GeekatplayDisplayTextBox:
         return {
             "required": {
                 "text": ("STRING", {"forceInput": True}),
+            },
+            "optional": {
+                "display_text": ("STRING", {"default": "", "multiline": True}),
             }
         }
 
@@ -763,13 +775,10 @@ class GeekatplayDisplayTextBox:
     FUNCTION = "display_text"
     CATEGORY = "Geekatplay Studio/Utility"
     
-    # Enable ComfyUI dynamic UI update to show text in node box
-    # In ComfyUI, if a node has OUTPUT_NODE = True and returns UI dictionary, 
-    # it can send output to frontend.
     OUTPUT_NODE = True
 
-    def display_text(self, text):
-        # We print it to console
+    def display_text(self, text, display_text=""):
+        # Print to console log
         print(f"\n--- Geekatplay Studio Music Description ---\n{text}\n--------------------------------------------\n")
-        # Return standard output and UI output for custom displays
+        # Return UI event for web frontend rendering and STRING output for piping into SD nodes
         return {"ui": {"string": [text]}, "result": (text,)}
