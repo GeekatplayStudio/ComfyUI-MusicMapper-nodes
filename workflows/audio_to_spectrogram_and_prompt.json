@@ -69,9 +69,9 @@
     },
     {
       "id": 3,
-      "type": "GeekatplayDisplayTextBox",
+      "type": "ShowText",
       "pos": [920, 100],
-      "size": [450, 200],
+      "size": [450, 220],
       "flags": {},
       "order": 2,
       "mode": 0,
@@ -84,17 +84,18 @@
       ],
       "outputs": [
         {
-          "name": "text",
+          "name": "STRING",
           "type": "STRING",
           "links": [],
           "slot_index": 0
         }
       ],
-      "title": "GAP Display Text Box (Geekatplay)",
+      "title": "Show Generated Prompt (Native ComfyUI)",
       "properties": {
-        "Node name for S&R": "GeekatplayDisplayTextBox"
+        "Node name for S&R": "ShowText"
       },
       "widgets_values": [
+        "",
         ""
       ]
     },
