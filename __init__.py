@@ -1,10 +1,12 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+_DIR = os.path.dirname(os.path.abspath(__file__))
+if _DIR not in sys.path:
+    sys.path.insert(0, _DIR)
 
 try:
-    from .music_mapper import (
+    from .music_mapper import (  # type: ignore # noqa: F401
         GeekatplayLoadAudio,
         GeekatplaySaveAudio,
         GeekatplayPreviewAudio,
@@ -13,8 +15,8 @@ try:
         GeekatplaySpectrogramToAudio,
         GeekatplayMusicAnalyser
     )
-except ImportError:
-    from music_mapper import (
+except (ImportError, ModuleNotFoundError):
+    from music_mapper import (  # type: ignore # noqa: F401
         GeekatplayLoadAudio,
         GeekatplaySaveAudio,
         GeekatplayPreviewAudio,
