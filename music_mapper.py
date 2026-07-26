@@ -424,12 +424,27 @@ class GeekatplaySpectrogramToAudio:
             except Exception as e:
                 print(f"[Geekatplay MusicMapper] Error parsing metadata: {e}")
 
-        mode = meta.get("mode", "Mel-Spectrogram (Standard Training)")
-        if reconstruct_mode != "Auto":
+        # Resolve mode: Auto-detect Phase-Encoded RGB if Green/Blue channels contain phase variance
+        img_np = image[0].cpu().numpy() # [H, W, C]
+        
+        mode = meta.get("mode", "")
+        if not mode or reconstruct_mode != "Auto":
             if reconstruct_mode == "Mel-Spectrogram Griffin-Lim":
                 mode = "Mel-Spectrogram (Standard Training)"
-            else:
+            elif reconstruct_mode == "Phase-Encoded RGB":
                 mode = "Phase-Encoded RGB (STFT)"
+            else:
+                # Auto-detect from image channels: if RGB has phase variance in G/B channels, use Phase-Encoded RGB!
+                if img_np.ndim == 3 and img_np.shape[-1] >= 3:
+                    g_var = float(np.var(img_np[..., 1]))
+                    b_var = float(np.var(img_np[..., 2]))
+                    if g_var > 0.002 and b_var > 0.002:
+                        mode = "Phase-Encoded RGB (STFT)"
+                        print("[Geekatplay MusicMapper] Auto-detected Phase-Encoded RGB image! Using Lossless ISTFT Reconstruction.")
+                    else:
+                        mode = "Mel-Spectrogram (Standard Training)"
+                else:
+                    mode = "Mel-Spectrogram (Standard Training)"
 
         sr = meta.get("sample_rate", sample_rate)
         fft_len = meta.get("n_fft", n_fft)
@@ -438,9 +453,7 @@ class GeekatplaySpectrogramToAudio:
         original_samples = meta.get("original_samples", 0)
         channel_metadata = meta.get("channel_metadata", [])
 
-        img_np = image[0].cpu().numpy()
         panel_height = img_np.shape[0] // channels
-        
         reconstructed_waveforms = []
         
         for c in range(channels):
@@ -464,10 +477,10 @@ class GeekatplaySpectrogramToAudio:
                     sr=sr,
                     n_fft=fft_len,
                     hop_length=hop,
-                    n_iter=griffin_lim_iter
+                    n_iter=max(griffin_lim_iter, 64)
                 )
                 
-            else: # Phase-Encoded RGB (STFT)
+            else: # Phase-Encoded RGB (Lossless STFT)
                 mag_min = c_meta.get("mag_min", 0.0)
                 mag_max = c_meta.get("mag_max", 10.0)
                 
@@ -496,8 +509,11 @@ class GeekatplaySpectrogramToAudio:
             
         waveform_np = np.stack(reconstructed_waveforms, axis=0)
         
+        # Only normalize if peak amplitude exceeds 1.0 to preserve exact dynamics
         max_val = np.max(np.abs(waveform_np))
-        if max_val > 1e-6:
+        if max_val > 1.0:
+            waveform_np = waveform_np / max_val
+        elif max_val < 0.01 and mode == "Mel-Spectrogram (Standard Training)":
             waveform_np = (waveform_np / max_val) * 0.95
             
         waveform_np = np.nan_to_num(waveform_np, nan=0.0)
