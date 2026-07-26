@@ -62,6 +62,7 @@
       },
       "widgets_values": [
         "LAION-CLAP Deep Learning (Auto-Download)",
+        "Suno / Udio Style (Comma-Separated Tags)",
         "http://localhost:11434",
         "llama3",
         "Focus on acoustic resonance and harmonic detail"
