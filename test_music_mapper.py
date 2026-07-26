@@ -117,11 +117,11 @@ def test_music_mapper():
     assert recon_waveform.shape[1] == 1, "Reconstructed channels count mismatch"
     assert recon_waveform.shape[2] == int(sr * 4.0), "Reconstructed samples length mismatch"
     
-    print("\nTesting MusicAnalyser (Fallback mode)...")
+    print("\nTesting MusicAnalyser (LAION-CLAP Deep Learning Mode)...")
     node_analyser = GeekatplayMusicAnalyser()
     prompt, features_json = node_analyser.analyze_music(
         audio=audio,
-        use_ollama=False,
+        analysis_engine="LAION-CLAP Deep Learning (Auto-Download)",
         ollama_url="http://localhost:11434",
         ollama_model="llama3",
         additional_context="Focus on acoustic resonance"

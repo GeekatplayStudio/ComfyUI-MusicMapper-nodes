@@ -515,7 +515,7 @@ class GeekatplayMusicAnalyser:
         return {
             "required": {
                 "audio": ("AUDIO",),
-                "use_ollama": ("BOOLEAN", {"default": True}),
+                "analysis_engine": (["LAION-CLAP Deep Learning (Auto-Download)", "Ollama LLM", "Offline DSP Rules"], {"default": "LAION-CLAP Deep Learning (Auto-Download)"}),
                 "ollama_url": ("STRING", {"default": "http://localhost:11434"}),
                 "ollama_model": ("STRING", {"default": "llama3"}),
             },
@@ -529,7 +529,7 @@ class GeekatplayMusicAnalyser:
     FUNCTION = "analyze_music"
     CATEGORY = "Geekatplay Studio/Audio"
 
-    def analyze_music(self, audio, use_ollama, ollama_url, ollama_model, additional_context=""):
+    def analyze_music(self, audio, analysis_engine="LAION-CLAP Deep Learning (Auto-Download)", ollama_url="http://localhost:11434", ollama_model="llama3", additional_context=""):
         waveform = audio["waveform"][0].cpu().numpy()
         sr = audio["sample_rate"]
         y = np.mean(waveform, axis=0)
@@ -633,7 +633,6 @@ class GeekatplayMusicAnalyser:
             "tonality_type": "Minor / Introspective" if is_minor else "Major / Uplifting",
             "brightness_profile": "Dark / Sub-bass" if mean_centroid < 1200 else ("Bright / Treble" if mean_centroid > 2400 else "Balanced / Mid-range")
         }
-        features_json = json.dumps(features_meta, indent=2)
 
         fallback_prompt = (
             f"Geekatplay Studio Audio Analysis Report by Vladimir Chopine. "
@@ -644,28 +643,87 @@ class GeekatplayMusicAnalyser:
             f"With a mean RMS energy level of {mean_rms:.4f} ({dynamic_desc}), the audio displays an amplitude envelope with {amplitude_envelope}. "
             f"Spectral rolloff cutoff is at {mean_rolloff:.1f} Hz with a dynamic range ratio of {dynamic_range:.4f}."
         )
-        
         if additional_context and additional_context.strip():
             fallback_prompt += f" Additional Context: {additional_context.strip()}."
 
         if len(fallback_prompt) < 950:
-            expansion = (
+            fallback_prompt += (
                 f" This detailed audio feature signature accurately describes the physical sound waves, tonal key center, "
                 f"frequency distribution, transient density, and dynamic loudness of the recording for model mapping and acoustic synthesis."
             )
-            fallback_prompt += expansion
 
         final_prompt = fallback_prompt
 
-        if use_ollama:
+        if analysis_engine == "LAION-CLAP Deep Learning (Auto-Download)":
+            print("[Geekatplay MusicMapper] Running LAION-CLAP Deep Learning Audio AI Model...")
+            try:
+                from transformers import ClapModel, ClapProcessor  # type: ignore # noqa: F401
+                
+                if sr != 48000:
+                    y_48k = librosa.resample(y, orig_sr=sr, target_sr=48000)
+                else:
+                    y_48k = y
+                    
+                print("[Geekatplay MusicMapper] Loading HuggingFace LAION-CLAP model (laion/clap-htsat-fused)...")
+                processor = ClapProcessor.from_pretrained("laion/clap-htsat-fused")
+                model = ClapModel.from_pretrained("laion/clap-htsat-fused")
+                
+                candidate_labels = [
+                    "acoustic piano performance",
+                    "distorted electric guitar riff",
+                    "heavy synthesizer bassline",
+                    "acoustic drum rhythm beat",
+                    "brass orchestral instruments",
+                    "ambient synthesizer soundscape pad",
+                    "classical orchestral strings",
+                    "electronic dance music beat"
+                ]
+                
+                inputs = processor(audio=y_48k, text=candidate_labels, sampling_rate=48000, return_tensors="pt", padding=True)
+                with torch.no_grad():
+                    outputs = model(**inputs)
+                    logits_per_audio = outputs.logits_per_audio
+                    probs = logits_per_audio.softmax(dim=-1).cpu().numpy()[0]
+                    
+                top_idx = int(np.argmax(probs))
+                top_label = candidate_labels[top_idx]
+                top_prob = float(probs[top_idx])
+                
+                print(f"[Geekatplay MusicMapper] CLAP Primary Acoustic Classification: '{top_label}' ({top_prob*100:.1f}% confidence)")
+                
+                features_meta["clap_primary_classification"] = top_label
+                features_meta["clap_classification_confidence"] = round(top_prob, 4)
+                
+                clap_report = (
+                    f"Geekatplay Studio Deep Learning Audio Analysis Report by Vladimir Chopine. "
+                    f"Multimodal Audio Model Feature Analysis: The raw audio recording was processed directly through the LAION-CLAP deep neural network architecture. "
+                    f"The neural model identifies the primary acoustic sound signature as '{top_label}' with {top_prob*100:.1f}% classification confidence. "
+                    f"Harmonically, the track centers around the key of {detected_key} ({tonality_desc}), exhibiting {consonance_desc}. "
+                    f"Rhythmically, the audio signal tracks at an estimated tempo of {tempo:.1f} BPM ({tempo_desc}), displaying {rhythm_pattern}. "
+                    f"Spectrally, the audio centroid averages {mean_centroid:.1f} Hz ({brightness_desc}), demonstrating {freq_balance}. "
+                    f"Timbrally, the signal registers a zero crossing rate of {mean_zcr:.4f} ({timbre_desc}), featuring {percussion_desc}. "
+                    f"Dynamically, with a mean RMS energy level of {mean_rms:.4f} ({dynamic_desc}), the amplitude envelope exhibits {amplitude_envelope}. "
+                    f"Spectral rolloff cutoff is at {mean_rolloff:.1f} Hz with a dynamic range ratio of {dynamic_range:.4f}."
+                )
+                if additional_context and additional_context.strip():
+                    clap_report += f" Additional Context: {additional_context.strip()}."
+                    
+                if len(clap_report) < 950:
+                    clap_report += (
+                        " This deep learning audio feature embedding signature captures the physical acoustic sound waves, "
+                        "instrumental timbres, pitch key center, and dynamic energy density of the recording for model training and sound mapping."
+                    )
+                final_prompt = clap_report
+            except Exception as e:
+                print(f"[Geekatplay MusicMapper] LAION-CLAP execution error: {e}. Falling back to rule-based engine.")
+
+        elif analysis_engine == "Ollama LLM":
             print(f"[Geekatplay MusicMapper] Querying local Ollama model '{ollama_model}' at {ollama_url}...")
-            
             system_instruction = (
                 "You are an expert musicologist and audio signal analyst for Geekatplay Studio by Vladimir Chopine. "
                 "Your task is to write an extensive, highly detailed, professional musicological description (around 1000 characters) analyzing the audio's musical characteristics, key, tempo, acoustic dynamics, timbre, frequency balance, and rhythm. "
                 "Do NOT include any visual art styles (no paintings, no cyberpunks, no surrealism). Focus 100% purely on the music and sound wave analysis. Output ONLY the raw description paragraph."
             )
-            
             prompt_input = (
                 f"Write a comprehensive music analysis paragraph (around 1000 characters) based on these extracted DSP audio features:\n"
                 f"- Tempo: {tempo:.1f} BPM ({tempo_desc})\n"
@@ -678,19 +736,14 @@ class GeekatplayMusicAnalyser:
                 f"- Additional Context: {additional_context if additional_context else 'None'}\n\n"
                 f"Write a continuous, highly detailed, academic yet accessible analysis of this music. Include Geekatplay Studio and Vladimir Chopine."
             )
-            
             try:
                 url = f"{ollama_url.rstrip('/')}/api/generate"
                 payload = {
                     "model": ollama_model,
                     "prompt": f"{system_instruction}\n\nUser Request:\n{prompt_input}",
                     "stream": False,
-                    "options": {
-                        "temperature": 0.7,
-                        "num_predict": 350
-                    }
+                    "options": {"temperature": 0.7, "num_predict": 350}
                 }
-                
                 response = requests.post(url, json=payload, timeout=6.0)
                 if response.status_code == 200:
                     resp_json = response.json()
@@ -698,21 +751,11 @@ class GeekatplayMusicAnalyser:
                     if not response_text and "message" in resp_json:
                         response_text = resp_json["message"].get("content", "")
                     response_text = response_text.strip()
-                    
                     if len(response_text) > 100:
                         final_prompt = response_text
                         print("[Geekatplay MusicMapper] Ollama prompt generated successfully.")
-                    else:
-                        print(f"[Geekatplay MusicMapper] Ollama response too short ({len(response_text)} chars). Using rule-based fallback.")
-                else:
-                    print(f"[Geekatplay MusicMapper] Ollama returned status {response.status_code}. Using rule-based fallback.")
-            except requests.exceptions.Timeout:
-                print("[Geekatplay MusicMapper] Ollama connection timed out. Using rule-based fallback.")
             except Exception as e:
                 print(f"[Geekatplay MusicMapper] Ollama error: {e}. Using rule-based fallback.")
 
-        if not final_prompt or len(final_prompt.strip()) < 50:
-            print("[Geekatplay MusicMapper] Prompt was empty. Using rule-based fallback engine.")
-            final_prompt = fallback_prompt
-
+        features_json = json.dumps(features_meta, indent=2)
         return (final_prompt, features_json)

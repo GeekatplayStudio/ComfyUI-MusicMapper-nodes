@@ -61,7 +61,7 @@
         "Node name for S&R": "GeekatplayMusicAnalyser"
       },
       "widgets_values": [
-        true,
+        "LAION-CLAP Deep Learning (Auto-Download)",
         "http://localhost:11434",
         "llama3",
         "Focus on acoustic resonance and harmonic detail"
