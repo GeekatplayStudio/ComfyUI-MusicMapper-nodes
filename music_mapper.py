@@ -564,6 +564,13 @@ class GeekatplaySpectrogramToAudio:
         # Stack waveforms into [1, channels, samples]
         waveform_np = np.stack(reconstructed_waveforms, axis=0)
         
+        # Peak normalize waveform to 0.95 peak amplitude so reconstructed sound is loud and clear
+        max_val = np.max(np.abs(waveform_np))
+        if max_val > 1e-6:
+            waveform_np = (waveform_np / max_val) * 0.95
+            
+        waveform_np = np.nan_to_num(waveform_np, nan=0.0)
+        
         # Audio output
         audio = {
             "waveform": torch.from_numpy(waveform_np).unsqueeze(0).float(),
