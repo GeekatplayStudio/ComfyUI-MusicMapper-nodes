@@ -128,9 +128,8 @@ def test_music_mapper():
     print(f"\nPrompt length: {len(prompt)} characters")
     print(f"Features JSON:\n{features_json}")
     
-    assert len(prompt) > 500, "Generated prompt is too short"
-    assert "Geekatplay Studio" in prompt, "Branding missing in prompt"
-    assert "Vladimir Chopine" in prompt, "Creator name missing in prompt"
+    assert len(prompt) > 30, "Generated prompt is too short"
+    assert "BPM" in prompt or "key" in prompt, "Musical parameters missing in prompt"
     
     features = json.loads(features_json)
     assert "estimated_tempo_bpm" in features, "BPM missing in features"

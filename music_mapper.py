@@ -545,6 +545,7 @@ class GeekatplayMusicAnalyser:
             "required": {
                 "audio": ("AUDIO",),
                 "analysis_engine": (["LAION-CLAP Deep Learning (Auto-Download)", "Ollama LLM", "Offline DSP Rules"], {"default": "LAION-CLAP Deep Learning (Auto-Download)"}),
+                "prompt_style": (["Suno / Udio Style (Comma-Separated Tags)", "Detailed Musicological Report"], {"default": "Suno / Udio Style (Comma-Separated Tags)"}),
                 "ollama_url": ("STRING", {"default": "http://localhost:11434"}),
                 "ollama_model": ("STRING", {"default": "llama3"}),
             },
@@ -559,7 +560,7 @@ class GeekatplayMusicAnalyser:
     CATEGORY = "Geekatplay Studio/Audio"
     OUTPUT_NODE = True
 
-    def analyze_music(self, audio, analysis_engine="LAION-CLAP Deep Learning (Auto-Download)", ollama_url="http://localhost:11434", ollama_model="llama3", additional_context=""):
+    def analyze_music(self, audio, analysis_engine="LAION-CLAP Deep Learning (Auto-Download)", prompt_style="Suno / Udio Style (Comma-Separated Tags)", ollama_url="http://localhost:11434", ollama_model="llama3", additional_context=""):
         waveform = audio["waveform"][0].cpu().numpy()
         sr = audio["sample_rate"]
         y = np.mean(waveform, axis=0)
@@ -750,21 +751,18 @@ class GeekatplayMusicAnalyser:
         elif analysis_engine == "Ollama LLM":
             print(f"[Geekatplay MusicMapper] Querying local Ollama model '{ollama_model}' at {ollama_url}...")
             system_instruction = (
-                "You are an expert musicologist and audio signal analyst for Geekatplay Studio by Vladimir Chopine. "
-                "Your task is to write an extensive, highly detailed, professional musicological description (around 1000 characters) analyzing the audio's musical characteristics, key, tempo, acoustic dynamics, timbre, frequency balance, and rhythm. "
-                "Do NOT include any visual art styles (no paintings, no cyberpunks, no surrealism). Focus 100% purely on the music and sound wave analysis. Output ONLY the raw description paragraph."
+                "You are a professional music prompt engineer for Suno AI and Udio by Vladimir Chopine at Geekatplay Studio. "
+                "Your task is to write a concise, comma-separated list of musical style tags, tempo, key, instruments, and mood based on the provided DSP audio features. "
+                "Do NOT include any intro text, conversational filler, or formatting headers. Output ONLY the raw comma-separated prompt tags."
             )
             prompt_input = (
-                f"Write a comprehensive music analysis paragraph (around 1000 characters) based on these extracted DSP audio features:\n"
-                f"- Tempo: {tempo:.1f} BPM ({tempo_desc})\n"
-                f"- Rhythmic Pattern: {rhythm_pattern}\n"
+                f"Generate a comma-separated list of musical style tags for Suno / Udio based on these extracted DSP audio features:\n"
+                f"- Tempo: {tempo:.1f} BPM\n"
                 f"- Key & Tonality: {detected_key} ({tonality_desc})\n"
-                f"- Harmonic Tension: {consonance_desc}\n"
+                f"- Primary Timbre / Instrument: {features_meta.get('clap_primary_classification', 'acoustic instrumental')}\n"
                 f"- Frequency Centroid: {mean_centroid:.1f} Hz ({brightness_desc})\n"
-                f"- Timbre & Noise (Zero Crossing): {mean_zcr:.4f} ({timbre_desc})\n"
                 f"- Dynamic Energy (RMS): {mean_rms:.4f} ({dynamic_desc})\n"
-                f"- Additional Context: {additional_context if additional_context else 'None'}\n\n"
-                f"Write a continuous, highly detailed, academic yet accessible analysis of this music. Include Geekatplay Studio and Vladimir Chopine."
+                f"- Additional Context: {additional_context if additional_context else 'None'}\n"
             )
             try:
                 url = f"{ollama_url.rstrip('/')}/api/generate"
@@ -772,7 +770,7 @@ class GeekatplayMusicAnalyser:
                     "model": ollama_model,
                     "prompt": f"{system_instruction}\n\nUser Request:\n{prompt_input}",
                     "stream": False,
-                    "options": {"temperature": 0.7, "num_predict": 350}
+                    "options": {"temperature": 0.7, "num_predict": 150}
                 }
                 response = requests.post(url, json=payload, timeout=6.0)
                 if response.status_code == 200:
@@ -781,11 +779,49 @@ class GeekatplayMusicAnalyser:
                     if not response_text and "message" in resp_json:
                         response_text = resp_json["message"].get("content", "")
                     response_text = response_text.strip()
-                    if len(response_text) > 100:
+                    if len(response_text) > 10:
                         final_prompt = response_text
                         print("[Geekatplay MusicMapper] Ollama prompt generated successfully.")
             except Exception as e:
                 print(f"[Geekatplay MusicMapper] Ollama error: {e}. Using rule-based fallback.")
+
+        if prompt_style == "Suno / Udio Style (Comma-Separated Tags)":
+            suno_tags = []
+            if "clap_primary_classification" in features_meta:
+                suno_tags.append(features_meta["clap_primary_classification"])
+            elif mean_centroid > 2400:
+                suno_tags.append("bright synth leads")
+            elif mean_centroid < 1200:
+                suno_tags.append("sub-bass low frequency groove")
+            else:
+                suno_tags.append("acoustic instrumental")
+
+            suno_tags.append(f"{tempo:.1f} BPM")
+            suno_tags.append(f"key of {detected_key}")
+            
+            if is_minor:
+                suno_tags.append("introspective, dark minor chord progression")
+            else:
+                suno_tags.append("bright, uplifting major-key harmony")
+
+            if mean_centroid < 1200:
+                suno_tags.append("deep bass warm timbre")
+            elif mean_centroid < 2400:
+                suno_tags.append("balanced mid-range balance")
+            else:
+                suno_tags.append("sparkling bright treble, crisp overtones")
+
+            if mean_rms > 0.08:
+                suno_tags.append("high-energy wall-of-sound, loud dynamic compression")
+            elif mean_rms < 0.015:
+                suno_tags.append("whisper-soft intimate dynamics")
+            else:
+                suno_tags.append("steady dynamic rhythm")
+
+            if additional_context and additional_context.strip():
+                suno_tags.append(additional_context.strip())
+
+            final_prompt = ", ".join(suno_tags)
 
         features_json = json.dumps(features_meta, indent=2)
         return {

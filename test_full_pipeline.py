@@ -87,10 +87,9 @@ def run_full_pipeline_test():
     print(f"Prompt Character Length: {len(prompt)}")
     print(f"Features JSON:\n{features_json}")
     
-    assert len(prompt) > 500, "ERROR: Generated prompt is too short!"
-    assert "Geekatplay Studio" in prompt, "ERROR: Missing Geekatplay branding!"
-    assert "Vladimir Chopine" in prompt, "ERROR: Missing Vladimir Chopine credit!"
-    print("\n[PASS] Music Analyser generated prompt successfully!")
+    assert len(prompt) > 30, "ERROR: Generated prompt is too short!"
+    assert "BPM" in prompt or "key" in prompt, "ERROR: Missing musical parameters in prompt!"
+    print("\n[PASS] Music Analyser generated Suno / Udio style prompt successfully!")
     
     # 3. Test GeekatplayDisplayTextBox UI Output
     print("\n[STEP 3] Testing GAP Display Text Box UI Payload...")
