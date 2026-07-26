@@ -1,0 +1,193 @@
+{
+  "last_node_id": 5,
+  "last_link_id": 4,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "GeekatplayLoadAudio",
+      "pos": [100, 100],
+      "size": [350, 80],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [1, 2],
+          "slot_index": 0
+        },
+        {
+          "name": "audio_path",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "title": "GAP Load Audio (Geekatplay)",
+      "properties": {
+        "Node name for S&R": "GeekatplayLoadAudio"
+      },
+      "widgets_values": [
+        "input_audio.wav"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "GeekatplayMusicAnalyser",
+      "pos": [500, 100],
+      "size": [380, 260],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": [3],
+          "slot_index": 0
+        },
+        {
+          "name": "extracted_features_json",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "title": "GAP Music Analyser & Prompt (Geekatplay)",
+      "properties": {
+        "Node name for S&R": "GeekatplayMusicAnalyser"
+      },
+      "widgets_values": [
+        true,
+        "http://localhost:11434",
+        "llama3",
+        "Cosmic / Nebula",
+        "Highly detailed, masterpiece, smooth lines, gradient backdrop"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "GeekatplayDisplayTextBox",
+      "pos": [920, 100],
+      "size": [450, 200],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 0
+        }
+      ],
+      "title": "GAP Display Text Box (Geekatplay)",
+      "properties": {
+        "Node name for S&R": "GeekatplayDisplayTextBox"
+      },
+      "widgets_values": [
+        ""
+      ]
+    },
+    {
+      "id": 4,
+      "type": "GeekatplayAudioToSpectrogram",
+      "pos": [500, 420],
+      "size": [380, 280],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [4],
+          "slot_index": 0
+        },
+        {
+          "name": "metadata_json",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "title": "GAP Audio To Spectrogram (Geekatplay)",
+      "properties": {
+        "Node name for S&R": "GeekatplayAudioToSpectrogram"
+      },
+      "widgets_values": [
+        "Mel-Spectrogram (Standard Training)",
+        "Geekatplay Orange Blue",
+        2048,
+        512,
+        512,
+        10.0,
+        44100,
+        "mixdown_mono"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "SaveImage",
+      "pos": [920, 420],
+      "size": [350, 300],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 4
+        }
+      ],
+      "outputs": [],
+      "title": "Save Spectrogram Image",
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "Geekatplay_MusicMapper/spectrogram"
+      ]
+    }
+  ],
+  "links": [
+    [1, 1, 0, 2, 0, "AUDIO"],
+    [2, 1, 0, 4, 0, "AUDIO"],
+    [3, 2, 0, 3, 0, "STRING"],
+    [4, 4, 0, 5, 0, "IMAGE"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 1.0,
+      "offset": [0, 0]
+    },
+    "frontendVersion": "1.24.4"
+  },
+  "version": 0.4
+}
