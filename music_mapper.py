@@ -8,6 +8,9 @@ import requests
 import matplotlib.pyplot as plt
 import folder_paths
 
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="librosa")
+
 # Setup default configurations
 DEFAULT_N_FFT = 2048
 DEFAULT_HOP_LENGTH = 512
@@ -320,7 +323,8 @@ class GeekatplayAudioToSpectrogram:
                     sr=sample_rate, 
                     n_fft=n_fft, 
                     hop_length=hop_length, 
-                    n_mels=n_mels
+                    n_mels=n_mels,
+                    fmax=sample_rate / 2.0
                 )
                 S_db = librosa.power_to_db(S, ref=1.0)
                 
